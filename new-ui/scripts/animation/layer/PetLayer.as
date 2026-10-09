@@ -150,8 +150,8 @@ package animation.layer
          var defSide:int = moveSides[1];
          var atk:MovieClip = fighters[1 + atkSide].pet;
          var def:MovieClip = fighters[1 + defSide].pet;
-         setChildIndex(def,2);
-         setChildIndex(atk,3);
+         setChildIndex(atk,2);
+         setChildIndex(def,3);
          moveLabel = SkillCategoryName.atkLabel(moveData.category);
          hitLabel = buildHurtLabel(moveData.miss,moveData.critical);
          pets = Vector.<PetData>([null,frame.data.left.master,frame.data.right.master]);
