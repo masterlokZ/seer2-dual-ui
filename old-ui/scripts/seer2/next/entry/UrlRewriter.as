@@ -1,0 +1,106 @@
+package seer2.next.entry
+{
+   import com.adobe.crypto.MD5;
+   import com.taomee.seer2.core.loader.ContentInfo;
+   import com.taomee.seer2.core.loader.UILoader;
+   import com.taomee.seer2.core.utils.URLUtil;
+   import flash.utils.ByteArray;
+   import mx.utils.Base64Decoder;
+   
+   public class UrlRewriter
+   {
+      
+      private static const airBaseURL:String = "http://43.138.190.6/seer2/";
+      
+      public function UrlRewriter()
+      {
+         super();
+      }
+      
+      public static function loadConfig(onComplete:Function = null) : void
+      {
+         var bloomPathUrl:String = "config/bloom-path.data";
+         if(DynSwitch.isAIR)
+         {
+            bloomPathUrl = "http://43.138.190.6/seer2/" + bloomPathUrl;
+         }
+         UILoader.load(bloomPathUrl,"text",function(param1:ContentInfo):void
+         {
+            var mightContains:Function = parseData(param1.content);
+            URLUtil.rewrite = function(param1:String):String
+            {
+               var path:String = "/" + getPathFromURL(param1);
+               if(Boolean(mightContains(path)))
+               {
+                  return DynSwitch.isAIR ? "http://43.138.190.6/seer2/" + param1 : param1;
+               }
+               return (DynSwitch.isAIR ? "http:" : "") + (DynSwitch.bloomfilterFallbackUrl || "//seer2.61.com/") + param1;
+            };
+            if(onComplete != null)
+            {
+               onComplete();
+            }
+         },function(param1:*):void
+         {
+            if(onComplete != null)
+            {
+               onComplete();
+            }
+         });
+      }
+      
+      public static function parseData(data:String) : Function
+      {
+         var base64Decoded:ByteArray;
+         var bloom:Vector.<Boolean>;
+         var byte0:uint;
+         var i:int;
+         var mightContains:Function;
+         var split:Array = data.split("\n");
+         var func_num:uint = uint(split[1]);
+         var base64Decoder:Base64Decoder = new Base64Decoder();
+         base64Decoder.decode(split[2]);
+         base64Decoded = base64Decoder.toByteArray();
+         base64Decoded.position = 0;
+         for(bloom = new Vector.<Boolean>(); base64Decoded.bytesAvailable > 0; )
+         {
+            byte0 = base64Decoded.readUnsignedByte();
+            for(i = 0; i < 8; )
+            {
+               bloom.push((byte0 >> i & 1) == 1);
+               i++;
+            }
+         }
+         mightContains = function(data:String):Boolean
+         {
+            var md5:String = MD5.hash(data);
+            var hash1:uint = uint(uint("0x" + md5.substr(0,8)) ^ uint("0x" + md5.substr(8,8)));
+            var hash2:uint = uint(uint("0x" + md5.substr(16,8)) ^ uint("0x" + md5.substr(24,8)));
+            var combinedHash:uint = hash1;
+            var j:int = 0;
+            while(j < func_num)
+            {
+               if(!bloom[combinedHash % bloom.length])
+               {
+                  return false;
+               }
+               combinedHash += hash2;
+               j++;
+            }
+            return true;
+         };
+         return mightContains;
+      }
+      
+      public static function getPathFromURL(url:String) : String
+      {
+         var index:int = url.indexOf("?");
+         if(index != -1)
+         {
+            url = url.substring(0,index);
+         }
+         return url;
+      }
+   }
+}
+

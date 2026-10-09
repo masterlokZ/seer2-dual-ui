@@ -1,0 +1,175 @@
+package animation.hub
+{
+   import animation.event.Events;
+   import flash.display.DisplayObject;
+   import flash.display.InteractiveObject;
+   import flash.display.MovieClip;
+   import flash.display.SimpleButton;
+   import flash.display.Sprite;
+   import flash.events.Event;
+   import flash.events.MouseEvent;
+   import ui.hub.UI_FightHub;
+   
+   internal class HubButtonPanel extends Sprite
+   {
+      
+      public static const EVT_FIGHT:String = "fight";
+      
+      public static const EVT_ITEM:String = "item";
+      
+      public static const EVT_PET:String = "pet";
+      
+      public static const EVT_ESCAPE:String = "escape";
+      
+      public static const EVT_CATCH:String = "catch";
+      
+      private var _fightBtn:SimpleButton;
+      
+      private var _autoBtn:SimpleButton;
+      
+      private var _settingBtn:SimpleButton;
+      
+      private var _itemBtn:SimpleButton;
+      
+      private var _petBtn:SimpleButton;
+      
+      private var _escapeBtn:SimpleButton;
+      
+      private var _catchBtn:SimpleButton;
+      
+      private var _itemMc:MovieClip;
+      
+      private var _petMc:MovieClip;
+      
+      private var _escapeMc:MovieClip;
+      
+      private var _catchMc:MovieClip;
+      
+      private var currentMc:MovieClip;
+      
+      private var _hub:UI_FightHub;
+      
+      public function HubButtonPanel()
+      {
+         super();
+         this.mouseEnabled = false;
+         this._hub = new UI_FightHub();
+         addChild(this._hub);
+         this._fightBtn = this._hub["fightBtn"];
+         this._autoBtn = this._hub["autoBtn"];
+         this._settingBtn = this._hub["settingBtn"];
+         this._itemMc = this._hub["itemMc"];
+         this._itemMc.gotoAndStop(1);
+         this._itemBtn = this._itemMc["btn"];
+         this._petMc = this._hub["petMc"];
+         this._petMc.gotoAndStop(1);
+         this._petBtn = this._petMc["btn"];
+         this._escapeMc = this._hub["escapeMc"];
+         this._escapeMc.gotoAndStop(1);
+         this._escapeBtn = this._escapeMc["btn"];
+         this._catchMc = this._hub["catchMc"];
+         this._catchMc.gotoAndStop(1);
+         this._catchBtn = this._catchMc["btn"];
+         this._fightBtn.addEventListener("click",this.onFightClick);
+         this._itemBtn.addEventListener("click",this.onItemClick);
+         this._petBtn.addEventListener("click",this.onPetClick);
+         this._escapeBtn.addEventListener("click",this.onEscapeClick);
+         this._catchBtn.addEventListener("click",this.onCatchClick);
+         this._autoBtn.addEventListener("click",this.onAutoClick);
+         this._settingBtn.addEventListener("click",this.onSettingClick);
+      }
+      
+      public function reset() : void
+      {
+         this.highLight(null);
+      }
+      
+      private function onFightClick(param1:MouseEvent) : void
+      {
+         this.highLight(null);
+         dispatchEvent(new Event("fight"));
+      }
+      
+      private function onItemClick(param1:MouseEvent) : void
+      {
+         this.highLight(this._itemMc);
+         dispatchEvent(new Event("item"));
+      }
+      
+      private function onPetClick(param1:MouseEvent) : void
+      {
+         this.highLight(this._petMc);
+         dispatchEvent(new Event("pet"));
+      }
+      
+      private function onEscapeClick(param1:MouseEvent) : void
+      {
+         this.highLight(this._escapeMc);
+         dispatchEvent(new Event("escape"));
+      }
+      
+      private function onCatchClick(param1:MouseEvent) : void
+      {
+         this.highLight(this._catchMc);
+         dispatchEvent(new Event("catch"));
+      }
+      
+      private function onAutoClick(param1:MouseEvent) : void
+      {
+         dispatchEvent(Events.btnAutoClick());
+      }
+      
+      private function onSettingClick(param1:MouseEvent) : void
+      {
+         dispatchEvent(Events.btnSettingClick());
+      }
+      
+      private function onMorphClick(param1:MouseEvent) : void
+      {
+         dispatchEvent(Events.btnMorphClick());
+      }
+      
+      private function highLight(param1:MovieClip) : void
+      {
+         if(this.currentMc !== param1)
+         {
+            if(this.currentMc)
+            {
+               this.currentMc.gotoAndStop(1);
+            }
+            this.currentMc = param1;
+            if(this.currentMc)
+            {
+               this.currentMc.gotoAndStop(2);
+            }
+         }
+      }
+      
+      public function enableHubPanel(param1:Boolean) : void
+      {
+         var _loc2_:int = 0;
+         var _loc3_:DisplayObject = null;
+         _loc2_ = 0;
+         while(_loc2_ < this._hub.numChildren)
+         {
+            _loc3_ = this._hub.getChildAt(_loc2_);
+            if(_loc3_ != this._autoBtn)
+            {
+               if(_loc3_ != this._settingBtn)
+               {
+                  if(_loc3_ is InteractiveObject)
+                  {
+                     InteractiveObject(_loc3_).mouseEnabled = param1;
+                  }
+                  if(_loc3_ is Sprite)
+                  {
+                     Sprite(_loc3_).mouseChildren = param1;
+                  }
+               }
+            }
+            _loc2_++;
+         }
+      }
+   }
+}
+

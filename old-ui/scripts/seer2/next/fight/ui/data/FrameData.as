@@ -1,0 +1,98 @@
+package seer2.next.fight.ui.data
+{
+   import seer2.next.fight.*;
+   
+   public class FrameData
+   {
+      
+      public static const SMOOTH_TRUE:int = 1;
+      
+      public static const SMOOTH_FALSE:int = 2;
+      
+      public var data:ArenaData;
+      
+      public var move:MoveData;
+      
+      public var change:ChangeData;
+      
+      public var event:EventData;
+      
+      public var start:StartData;
+      
+      public var end:EndData;
+      
+      public var sleep:int;
+      
+      public var smooth:int;
+      
+      public var logs:Vector.<String>;
+      
+      public function FrameData()
+      {
+         super();
+      }
+      
+      public static function from(obj:Object) : FrameData
+      {
+         var target:FrameData = new FrameData();
+         target.data = ArenaData.from(obj.data);
+         target.move = MoveData.from(obj.move);
+         target.change = ChangeData.from(obj.change);
+         target.event = EventData.from(obj.event);
+         target.start = StartData.from(obj.start);
+         target.end = EndData.from(obj.end);
+         target.sleep = obj.sleep;
+         target.smooth = obj.smooth;
+         target.logs = transString(obj.logs);
+         return target;
+      }
+      
+      public static function clone(obj:FrameData) : FrameData
+      {
+         var target:FrameData = new FrameData();
+         target.data = ArenaData.clone(obj.data);
+         target.move = MoveData.clone(obj.move);
+         target.change = ChangeData.clone(obj.change);
+         target.event = EventData.clone(obj.event);
+         target.start = StartData.clone(obj.start);
+         target.end = EndData.clone(obj.end);
+         target.sleep = obj.sleep;
+         target.smooth = obj.smooth;
+         target.logs = cloneString(obj.logs);
+         return target;
+      }
+      
+      private static function transString(array:Array) : Vector.<String>
+      {
+         var i:int = 0;
+         var res:Vector.<String> = new Vector.<String>();
+         if(!array)
+         {
+            return res;
+         }
+         for(i = 0; i < array.length; )
+         {
+            res.push(array[i]);
+            i++;
+         }
+         return res;
+      }
+      
+      private static function cloneString(array:Vector.<String>) : Vector.<String>
+      {
+         var i:int = 0;
+         var res:Vector.<String> = new Vector.<String>();
+         if(!array)
+         {
+            return res;
+         }
+         for(i = 0; i < array.length; )
+         {
+            res.push(array[i]);
+            i++;
+         }
+         return res;
+      }
+   }
+}
+

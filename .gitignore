@@ -1,0 +1,20 @@
+# Binary builds & SWF assets (Generated / Deployed directly to launcher)
+*.swf
+*.part
+*.tmp*
+build/
+dist/
+runtime/
+
+# Logs, temporary workspaces and caches
+*.log
+.codex-tmp/
+.sessions/
+
+# OS and Editor artifacts
+Thumbs.db
+.DS_Store
+.idea/
+.vscode/
+*.suo
+*.user

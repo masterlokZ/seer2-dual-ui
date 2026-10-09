@@ -1,0 +1,70 @@
+package com.taomee.seer2.core.scene
+{
+   import com.taomee.seer2.core.config.DreamConfig;
+   import com.taomee.seer2.core.loader.ContentInfo;
+   import com.taomee.seer2.core.loader.UILoader;
+   import com.taomee.seer2.core.map.ResourceLibrary;
+   import com.taomee.seer2.core.scene.events.SceneEvent;
+   import com.taomee.seer2.core.utils.URLUtil;
+   
+   public class MapLoader extends BaseMapLoader
+   {
+      
+      public static var isDream:Boolean;
+      
+      public static var lastMapUrl:String;
+      
+      public function MapLoader()
+      {
+         super();
+      }
+      
+      override public function load(param1:int) : void
+      {
+         isDream = false;
+         var _loc2_:uint = uint(param1);
+         if(DreamConfig.isDream(param1))
+         {
+            isDream = true;
+            _loc2_ = DreamConfig.getInfo(param1).prevMapId;
+         }
+         _xmlUrl = URLUtil.getMapConfig(_loc2_.toString());
+         UILoader.load(_xmlUrl,"text",this.onXmlLoaded,this.onLoadError);
+      }
+      
+      private function onXmlLoaded(param1:ContentInfo) : void
+      {
+         _configXml = XML(param1.content);
+         this.parseConfigXml();
+      }
+      
+      private function parseConfigXml() : void
+      {
+         var _loc2_:XML = _configXml.elements("resource")[0];
+         var _loc1_:String = _loc2_.attribute("url").toString();
+         _swfUrl = URLUtil.getMapSwf(_loc1_);
+         lastMapUrl = _swfUrl;
+         UILoader.load(_swfUrl,"swf",this.onSwfLoaded,this.onLoadError);
+      }
+      
+      private function onSwfLoaded(param1:ContentInfo) : void
+      {
+         _mapResource = param1.content;
+         _libManager = new ResourceLibrary(param1.domain);
+         dispatchEvent(new SceneEvent("loadComplete"));
+      }
+      
+      private function onLoadError(param1:ContentInfo) : void
+      {
+         dispatchEvent(new SceneEvent("loadError"));
+      }
+      
+      override public function dispose() : void
+      {
+         UILoader.cancel(_xmlUrl,this.onXmlLoaded);
+         UILoader.cancel(_swfUrl,this.onSwfLoaded);
+         super.dispose();
+      }
+   }
+}
+

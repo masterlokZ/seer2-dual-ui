@@ -1,0 +1,573 @@
+package com.taomee.seer2.app.arena.controller
+{
+   import com.taomee.seer2.app.actor.ActorManager;
+   import com.taomee.seer2.app.arena.ArenaScene;
+   import com.taomee.seer2.app.arena.FightManager;
+   import com.taomee.seer2.app.arena.Fighter;
+   import com.taomee.seer2.app.arena.animation.ArenaAnimationManager;
+   import com.taomee.seer2.app.arena.cmd.ResourceReadyCMD;
+   import com.taomee.seer2.app.arena.cmd.UseChangeCMD;
+   import com.taomee.seer2.app.arena.data.*;
+   import com.taomee.seer2.app.arena.decoration.DecorationControl;
+   import com.taomee.seer2.app.arena.events.FightStartEvent;
+   import com.taomee.seer2.app.arena.parser.FightTurnResultParser;
+   import com.taomee.seer2.app.arena.processor.*;
+   import com.taomee.seer2.app.arena.util.*;
+   import com.taomee.seer2.app.config.FitConfig;
+   import com.taomee.seer2.app.config.ItemConfig;
+   import com.taomee.seer2.app.config.item.EmblemItemDefinition;
+   import com.taomee.seer2.app.config.pet.PetFitDefinition;
+   import com.taomee.seer2.app.inventory.ItemManager;
+   import com.taomee.seer2.app.net.CommandSet;
+   import com.taomee.seer2.app.net.Connection;
+   import com.taomee.seer2.app.pet.data.PetInfo;
+   import com.taomee.seer2.app.pet.data.PetInfoManager;
+   import com.taomee.seer2.app.popup.ServerMessager;
+   import com.taomee.seer2.core.module.ModuleManager;
+   import com.taomee.seer2.core.scene.SceneManager;
+   import com.taomee.seer2.core.scene.events.SceneEvent;
+   import com.taomee.seer2.core.sound.SoundManager;
+   import com.taomee.seer2.core.utils.DisplayObjectUtil;
+   import com.taomee.seer2.core.utils.URLUtil;
+   import flash.display.Sprite;
+   import flash.events.Event;
+   import seer2.next.fight.auto.AutoFightPanel;
+   
+   public class FightController implements IFightController
+   {
+      
+      private static var _isFightAngle:Boolean;
+      
+      public static var isChangeSuccess:uint = 0;
+      
+      public static var isRightPetDead:Boolean;
+      
+      public static var isLeftPetDead:Boolean;
+      
+      private static var metamorphosis:Boolean;
+      
+      private var angerCorrecter:AngerCorrecter;
+      
+      private var _processores:Vector.<ArenaProcessor>;
+      
+      private var _scene:ArenaScene;
+      
+      private var _turnResultParser:FightTurnResultParser;
+      
+      private var _revenueInfo:RevenueInfo;
+      
+      private var _resultInfo:FightResultInfo;
+      
+      private var _fightChangeController:FightChangeController;
+      
+      private var _fightState:String;
+      
+      private var _buffResultInfoVec:Vector.<BuffResultInfo>;
+      
+      private var _turnResultInfoVec:Vector.<TurnResultInfo>;
+      
+      private var _pvpFightChangeInfos:Vector.<PvpFightChangeInfo> = new Vector.<PvpFightChangeInfo>();
+      
+      public function FightController(param1:ArenaScene)
+      {
+         super();
+         this._scene = param1;
+         FightController.isChangeSuccess = 0;
+         FightController.isRightPetDead = false;
+         FightController.isLeftPetDead = false;
+         this._fightChangeController = new FightChangeController(this._scene);
+         this.changeFighterState("presentation");
+         if(this._turnResultParser == null)
+         {
+            this._turnResultParser = new FightTurnResultParser(this._scene);
+            this._turnResultParser.addEventListener("parseEnd",this.turnParseEnd);
+         }
+         this.angerCorrecter = AngerCorrecter.getInstance();
+         this._turnResultInfoVec = new Vector.<TurnResultInfo>();
+         this._buffResultInfoVec = new Vector.<BuffResultInfo>();
+         this._processores = new Vector.<ArenaProcessor>();
+         this._processores.push(new Processor_1501(this._scene));
+         this._processores.push(new Processor_1502(this._scene));
+         this._processores.push(new Processor_2(this._scene));
+         this._processores.push(new Processor_3(this._scene));
+         this._processores.push(new Processor_7(this._scene));
+         this._processores.push(new Processor_5(this._scene));
+         this._processores.push(new Processor_1507(this._scene));
+         this._processores.push(new Processor_9(this._scene));
+         this._processores.push(new Processor_8(this._scene));
+         this._processores.push(new Processor_1031(this._scene));
+         this._processores.push(new Processor_10(this._scene));
+         this._processores.push(new Processor_11(this._scene));
+         this._processores.push(new Processor_12(this._scene));
+         this._processores.push(new Processor_15(this._scene));
+         this._processores.push(new Processor_16(this._scene));
+         this._processores.push(new Processor_17(this._scene));
+         this._processores.push(new Processor_18(this._scene));
+         this._processores.push(new Processor_19(this._scene));
+      }
+      
+      public static function exitFight0(_resultInfo:FightResultInfo, _scene:ArenaScene) : void
+      {
+         var petInfo:PetInfo = null;
+         var j:int = 0;
+         var changedPetInfo:PetInfo = null;
+         var showPetGainEmblemMessage:Function = function(param1:uint, param2:uint):void
+         {
+            var _loc6_:PetInfo = PetInfoManager.getPetInfoFromBag(param1);
+            var _loc5_:String = "";
+            if(_loc6_ != null)
+            {
+               _loc5_ = _loc6_.name;
+               _loc6_.emblemId = param2;
+            }
+            var _loc4_:EmblemItemDefinition = ItemConfig.getEmblemDefinition(param2);
+            var _loc3_:String = "";
+            if(_loc4_ != null)
+            {
+               _loc3_ = _loc4_.name;
+               ServerMessager.addMessage(_loc5_ + "获得" + _loc3_ + "之力");
+            }
+         };
+         var petInfoVec:Vector.<PetInfo> = PetInfoManager.getAllBagPetInfo();
+         var petInfoLen:int = int(petInfoVec.length);
+         var changedPetInfoLen:int = int(_resultInfo.changedPetInfoVec.length);
+         var i:int = 0;
+         ArenaAnimationManager.forCheckStuck = -1;
+         for(ArenaAnimationManager.showCountDownTime = 0; i < petInfoLen; )
+         {
+            petInfo = petInfoVec[i];
+            for(j = 0; j < changedPetInfoLen; )
+            {
+               changedPetInfo = _resultInfo.changedPetInfoVec[j];
+               if(changedPetInfo.level > ActorManager.actorInfo.highestPetLevel)
+               {
+                  ActorManager.actorInfo.highestPetLevel = changedPetInfo.level;
+               }
+               if(petInfo.catchTime == changedPetInfo.catchTime)
+               {
+                  PetInfo.updateBaseInfo(petInfo,changedPetInfo);
+                  petInfo.learningInfo.pointUnused = changedPetInfo.learningInfo.pointUnused;
+                  petInfo.resourceId = changedPetInfo.resourceId;
+                  petInfo.skillInfo.updateSkillInfoVec(changedPetInfo.skillInfo.skillInfoVec);
+                  petInfo.skillInfo.addGainedSkillInfoVec(changedPetInfo.skillInfo.gainedSkillInfoVec);
+                  PetInfoManager.dispatchEvent("petPropertiesChange",petInfo);
+               }
+               j++;
+            }
+            i++;
+         }
+         if(_resultInfo.gainedEmblemPetId != 0)
+         {
+            showPetGainEmblemMessage(_resultInfo.gainedEmblemPetId,_resultInfo.gainedEmblemId);
+         }
+         _scene.exitFight();
+         AutoFightPanel.FightOverEvent.dispatchEvent(new Event("fightOverEvent"));
+         if(FightManager.hasEventListener("FIGHT_OVER"))
+         {
+            SceneManager.addEventListener("switchComplete",onSwitchEvent);
+         }
+         if(DecorationControl._isShowDecoration)
+         {
+            DecorationControl.dispose();
+         }
+      }
+      
+      private static function onSwitchEvent(param1:SceneEvent) : void
+      {
+         SceneManager.removeEventListener("switchComplete",onSwitchEvent);
+         FightManager.dispatchEvent(new FightStartEvent("FIGHT_OVER"));
+      }
+      
+      public function addPar(param1:Sprite) : void
+      {
+      }
+      
+      public function parseTurnResult() : void
+      {
+         var turnResultInfoSort:Function = null;
+         turnResultInfoSort = function(param1:TurnResultInfo, param2:TurnResultInfo):int
+         {
+            if(param1.notifyIndex > param2.notifyIndex)
+            {
+               return -1;
+            }
+            return 1;
+         };
+         this.changeFighterState("fighting");
+         this._turnResultInfoVec = this._turnResultInfoVec.sort(turnResultInfoSort);
+         this._turnResultParser.parseTurnResult(this._turnResultInfoVec,this._buffResultInfoVec);
+      }
+      
+      private function turnParseEnd(param1:Event = null) : void
+      {
+         Connection.releaseCommand(CommandSet.FIGHT_CHANGE_PET_19);
+         Connection.blockCommand(CommandSet.FIGHT_CHANGE_PET_19);
+         this.checkPetFit();
+         this.checkPlayCatchMovie();
+         this.excutePvpFightInfo();
+         this.checkFightEnd();
+         if(DecorationControl._isShowDecoration)
+         {
+            DecorationControl.update();
+         }
+         this._turnResultParser.parsingTurnResultInfo = null;
+      }
+      
+      private function checkPetFit() : void
+      {
+         var _loc5_:FighterTurnResultInfo = null;
+         var _loc4_:Fighter = null;
+         var _loc1_:PetFitDefinition = null;
+         var _loc3_:TurnResultInfo = this._turnResultParser.parsingTurnResultInfo;
+         var _loc2_:Boolean = this._scene.arenaData.isFightEnd;
+         if(Boolean(_loc3_) && _loc2_ == false)
+         {
+            for each(_loc5_ in _loc3_.fighterTurnResultInfoVec)
+            {
+               _loc4_ = this._scene.arenaData.getFighter(_loc5_.userId,_loc5_.catchTime);
+               if(_loc5_.isAtker)
+               {
+                  _loc1_ = FitConfig.formSkillIdGetPetFitDefinition(_loc5_.skillId);
+                  if((Boolean(_loc1_)) && (FitConfig.checkPetType(_loc1_) || _loc5_.userId != ActorManager.actorInfo.id))
+                  {
+                     DisplayObjectUtil.removeFromParent(_loc4_);
+                     ArenaAnimationManager.abortCountDown();
+                     Connection.releaseCommand(CommandSet.FIT_CHANGE_HP_POS_18);
+                     Connection.blockCommand(CommandSet.FIT_CHANGE_HP_POS_18);
+                     if(_loc5_.userId != ActorManager.actorInfo.id)
+                     {
+                        this.updateFitPet(this.rightTeam,_loc1_);
+                     }
+                     else
+                     {
+                        this.updateFitPet(this.leftTeam,_loc1_);
+                        _isFightAngle = true;
+                        new UseChangeCMD(this.leftTeam.getFighterToBounchId(_loc1_.id).fighterInfo.catchTime).send();
+                        if(_loc1_.type != "void")
+                        {
+                           var _loc6_:String = _loc1_.type;
+                           if("item" === _loc6_)
+                           {
+                              ItemManager.reduceItemQuantity(_loc1_.content,1);
+                           }
+                        }
+                     }
+                  }
+               }
+            }
+         }
+      }
+      
+      private function updateFitPet(param1:FighterTeam, param2:PetFitDefinition) : void
+      {
+         if(param1.getFighterToBounchId(param2.id) == null)
+         {
+            return;
+         }
+         param1.replaceFighterPositionWithActive(1,param1.getFighterToBounchId(param2.id));
+         param1.getFighterToBounchId(param2.id).updatePosition();
+         param1.getFighterToBounchId(param2.id).fighterInfo.fightAnger = param1.getFighterToBounchId(param2.id).fighterInfo.fightAnger + param2.anger;
+         this._scene.mapModel.content.addChild(param1.getFighterToBounchId(param2.id));
+      }
+      
+      private function checkPlayCatchMovie() : void
+      {
+         var _loc2_:FighterTurnResultInfo = this.rightMainFighter.fighterTurnResultInfo;
+         var _loc1_:BuffResultInfo = this.rightMainFighter.fighterBuffResultInfo;
+         if(_loc2_ != null && _loc2_.isDying == true || _loc1_ != null && _loc1_.isDying == true)
+         {
+            if(this._scene.arenaData.fightMode == 3 && this._scene.arenaData.canCatchAfterSptDead)
+            {
+               this._scene.arenaData.canCatchAfterSptDeadNow = true;
+            }
+            ArenaAnimationManager.createAnimation("com.taomee.seer2.app.arena.animation.CatchHintAnimation");
+         }
+      }
+      
+      private function checkFightEnd() : void
+      {
+         var showFightResultPanel:Function = null;
+         var fightMode:uint = 0;
+         var delayTime:int = 0;
+         var showTeamWin:Function = function(param1:FighterTeam):void
+         {
+            var _loc2_:Fighter = param1.mainFighter;
+            var _loc3_:Fighter = param1.subFighter;
+            _loc2_.action = "胜利";
+            if(_loc3_ != null)
+            {
+               _loc3_.action = "胜利";
+            }
+         };
+         var showTeamFailure:Function = function(param1:FighterTeam):void
+         {
+            var _loc2_:Fighter = param1.mainFighter;
+            var _loc3_:Fighter = param1.subFighter;
+            if(_loc2_.action != "失败")
+            {
+               _loc2_.action = "失败";
+            }
+            if(_loc3_ != null && _loc3_.action != "失败")
+            {
+               _loc3_.action = "失败";
+            }
+         };
+         showFightResultPanel = function(param1:Object):void
+         {
+            var _loc2_:int = int(param1["delayTime"]);
+            if(_resultInfo.showWinnerSider == 2)
+            {
+               SoundManager.backgroundSoundEnabled = true;
+            }
+            var _loc3_:Object = {
+               "petInfoVec":PetInfoManager.getAllBagPetInfo(),
+               "revenueInfo":_revenueInfo,
+               "resultInfo":_resultInfo,
+               "fightMode":fightMode,
+               "closeHandler":exitFight,
+               "delayTime":_loc2_
+            };
+            ModuleManager.toggleModule(URLUtil.getAppModule("FightResultPanel"),"正在打开战斗结算面板...",_loc3_);
+         };
+         var isFightEnd:Boolean = this._scene.arenaData.isFightEnd;
+         if(isFightEnd == true)
+         {
+            ArenaUIIsNew.enableClick = false;
+            ArenaAnimationManager.abortCountDown();
+            if(this._resultInfo.showWinnerSider == 1)
+            {
+               showTeamWin(this.leftTeam);
+               showTeamFailure(this.rightTeam);
+            }
+            else
+            {
+               showTeamWin(this.rightTeam);
+               showTeamFailure(this.leftTeam);
+            }
+            if(AutoFightPanel.isRunning)
+            {
+               this.exitFight();
+               return;
+            }
+            fightMode = this._scene.fightMode;
+            delayTime = 0;
+            if(fightMode == 101)
+            {
+               delayTime = -1;
+            }
+            ArenaAnimationManager.createAnimation("com.taomee.seer2.app.arena.animation.KOAnimation",null,showFightResultPanel,{"delayTime":delayTime});
+         }
+         else
+         {
+            this.startNextTurn();
+         }
+      }
+      
+      public function changeFighter(param1:uint, param2:uint, param3:uint, param4:uint = 1) : void
+      {
+         this._fightChangeController.changeFighter(param1,param2,param3,param4);
+      }
+      
+      public function checkRightFighterChanged() : void
+      {
+         this._fightChangeController.checkRightFighterChanged();
+      }
+      
+      public function changeFighterState(param1:String) : void
+      {
+         this._fightState = param1;
+      }
+      
+      public function get state() : String
+      {
+         return this._fightState;
+      }
+      
+      public function addBuffResultInfo(param1:BuffResultInfo) : void
+      {
+         this._buffResultInfoVec.push(param1);
+      }
+      
+      public function addTurnResultInfo(param1:TurnResultInfo) : void
+      {
+         this._turnResultInfoVec.push(param1);
+      }
+      
+      public function addPvpFightInfo(param1:PvpFightChangeInfo) : void
+      {
+         this._pvpFightChangeInfos.push(param1);
+      }
+      
+      private function excutePvpFightInfo() : void
+      {
+         var _loc1_:PvpFightChangeInfo = null;
+         while(this._pvpFightChangeInfos.length > 0)
+         {
+            _loc1_ = this._pvpFightChangeInfos.pop();
+            if(_loc1_.catch_time != 0)
+            {
+               this.changeFighter(_loc1_.user_id,_loc1_.catch_time,_loc1_.anger,_loc1_.position);
+            }
+         }
+      }
+      
+      public function dispose() : void
+      {
+         var _loc2_:uint = this._processores.length;
+         var _loc1_:uint = 0;
+         while(_loc1_ < _loc2_)
+         {
+            this._processores[_loc1_].dispose();
+            _loc1_++;
+         }
+         this._processores = null;
+         if(this._turnResultParser != null)
+         {
+            this._turnResultParser.removeEventListener("parseEnd",this.turnParseEnd);
+            this._turnResultParser.dispose();
+            this._turnResultParser = null;
+         }
+         this.leftTeam.dispose();
+         this.rightTeam.dispose();
+         this._scene = null;
+         this._buffResultInfoVec = null;
+         this._turnResultInfoVec = null;
+         this._revenueInfo = null;
+         this._resultInfo = null;
+         this._fightChangeController.dispose();
+         this._fightChangeController = null;
+      }
+      
+      public function startFighter() : void
+      {
+         var count:uint = 0;
+         var onAnimationEnd:Function = null;
+         onAnimationEnd = function():void
+         {
+            --count;
+            if(count <= 0)
+            {
+               new ResourceReadyCMD(_scene.arenaData.fightMode).send();
+            }
+         };
+         count = 1;
+         ArenaAnimationManager.fighterPresentAnimation(this.leftMainFighter,this._scene.arenaData,onAnimationEnd);
+         if(this.leftSubFighter != null)
+         {
+            ArenaAnimationManager.fighterPresentAnimation(this.leftSubFighter,this._scene.arenaData,onAnimationEnd);
+            count = 2;
+         }
+      }
+      
+      private function angerAndTurnCorrect() : void
+      {
+         _isFightAngle = false;
+         if(this.rightSubFighter != null)
+         {
+            this.rightSubFighter.updateAnger(this.rightSubFighter.fighterInfo.fightAnger + 15);
+         }
+         if(this.leftSubFighter != null)
+         {
+            this.leftSubFighter.updateAnger(this.leftSubFighter.fighterInfo.fightAnger + 15);
+         }
+         if(isLeftPetDead)
+         {
+            isLeftPetDead = false;
+            return;
+         }
+         if(isChangeSuccess == 1 && isRightPetDead)
+         {
+            isChangeSuccess = 0;
+            isRightPetDead = false;
+            return;
+         }
+         if(metamorphosis)
+         {
+            this.leftMainFighter.updateAnger(this.leftMainFighter.fighterInfo.fightAnger + 15);
+            metamorphosis = false;
+            Processor_19.isChangeIng = false;
+            return;
+         }
+         this.angerCorrecter.angerCalulater(this.leftMainFighter,this.rightMainFighter);
+         DecorationControl._trunCount += 1;
+      }
+      
+      private function startNextTurn() : void
+      {
+         ArenaAnimationManager.hideWaiting();
+         this._fightChangeController.checkRightFighterChanged();
+         this.angerAndTurnCorrect();
+         if(isChangeSuccess == 1 || isRightPetDead)
+         {
+            isChangeSuccess = 0;
+            isRightPetDead = false;
+         }
+         this.arenaUIController.updateAngerBar();
+         this.arenaUIController.startSelectOperate();
+         if(this.rightMainFighter.fighterInfo.hp <= 0 && !this._scene.arenaData.isDoubleMode)
+         {
+            isRightPetDead = true;
+         }
+         if(this.leftMainFighter.fighterInfo.hp <= 0 && !this._scene.arenaData.isDoubleMode)
+         {
+            isLeftPetDead = true;
+            this.arenaUIController.activeControlPetPanel(this.leftMainFighter);
+         }
+         if(Processor_19.isChangeIng)
+         {
+            metamorphosis = true;
+         }
+      }
+      
+      public function exitFight() : void
+      {
+         exitFight0(this._resultInfo,_scene);
+      }
+      
+      public function set resultInfo(param1:FightResultInfo) : void
+      {
+         this._resultInfo = param1;
+      }
+      
+      public function set revenueInfo(param1:RevenueInfo) : void
+      {
+         this._revenueInfo = param1;
+      }
+      
+      public function get leftTeam() : FighterTeam
+      {
+         return this._scene.leftTeam;
+      }
+      
+      public function get rightTeam() : FighterTeam
+      {
+         return this._scene.rightTeam;
+      }
+      
+      public function get arenaUIController() : IArenaUIController
+      {
+         return this._scene.arenaUIController;
+      }
+      
+      public function get rightMainFighter() : Fighter
+      {
+         return this.rightTeam.mainFighter;
+      }
+      
+      public function get leftMainFighter() : Fighter
+      {
+         return this.leftTeam.mainFighter;
+      }
+      
+      public function get rightSubFighter() : Fighter
+      {
+         return this.rightTeam.subFighter;
+      }
+      
+      public function get leftSubFighter() : Fighter
+      {
+         return this.leftTeam.subFighter;
+      }
+   }
+}
+

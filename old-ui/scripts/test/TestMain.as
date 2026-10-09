@@ -1,0 +1,68 @@
+package test
+{
+   import com.taomee.seer2.app.arena.resource.FightUIManager;
+   import com.taomee.seer2.core.scene.LayerManager;
+   import com.taomee.seer2.core.ui.UIManager;
+   import com.taomee.seer2.core.ui.toolTip.TooltipManager;
+   import flash.display.Sprite;
+   import flash.text.TextFormat;
+   import seer2.next.utils.TextUtils;
+   
+   public class TestMain extends Sprite
+   {
+      
+      private static var ROOT:String = "http://127.0.0.1:7337/seer2/";
+      
+      public function TestMain()
+      {
+         super();
+         init(function():*
+         {
+            var _tip:MovieClip = FightUIManager.getMovieClip("UI_FightSkillTip");
+            _tip.x = 200;
+            _tip.y = 200;
+            addChild(_tip);
+            var _descriptionTxt:* = _tip["txtDes"];
+            var _loc4_:TextFormat = new TextFormat("",10);
+            _descriptionTxt.selectable = true;
+            _descriptionTxt.mouseEnabled = true;
+            _descriptionTxt.defaultTextFormat = _loc4_;
+            _descriptionTxt.autoSize = "left";
+            _descriptionTxt.wordWrap = true;
+            _descriptionTxt.border = false;
+            var text:String = TextUtils.replaceColorFormat("很好！[br]把这封问候信带给[ffcc00]草目氏族的酋长[-]，表达我们[ff0000]希望结盟的意愿[-]。记住，随机应变，结盟，只能成功！表达我们希望结盟的意愿。[br]记住，随机应变，[00ff00]结盟[-]，只能成功！");
+            _descriptionTxt.htmlText = TextUtils.wrapHtmlFontSize(text);
+            _descriptionTxt.htmlText = "1231311\n12312\n231212\n31311\n12312\n2312";
+            _descriptionTxt.htmlText = "1231311\n12312";
+            var _back:* = _tip["backMc"];
+            _back.height = Math.max(110.55,_descriptionTxt.height + 20);
+            _descriptionTxt.y = 5 - _back.height;
+            TooltipManager.addMultipleTip(_descriptionTxt,text);
+         });
+      }
+      
+      private function init(cb:Function) : *
+      {
+         var dll:DLLLoader = new DLLLoader();
+         LayerManager.setup(this);
+         TooltipManager.setup();
+         dll.addEventListener("complete",function():*
+         {
+            trace("load: DLL success");
+            RequestPool.sendSwfRequest(ROOT + "res/ui/UI.swf",function(data:*):*
+            {
+               trace("load: UI success");
+               UIManager.setup(data);
+               RequestPool.sendSwfRequest(ROOT + "res/ui/UI_Arena.swf",function(data:*):*
+               {
+                  trace("load: UI_Arena success");
+                  FightUIManager.setup(data);
+                  cb();
+               });
+            });
+         });
+         dll.doLoad(XML("<dll><item name=\"核心类库（四合一）\" path=\"dll/Seer2CoreDLL.swf\"/></dll>"),ROOT,false);
+      }
+   }
+}
+
