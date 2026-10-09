@@ -245,15 +245,7 @@ package animation.layer
                      if(moveData.critical > 0)
                      {
                         fgLayer.playCriticalHit();
-                        if(moveLabel === "物理攻击")
-                        {
-                           bgLayer.drift(atkSide);
-                        }
                      }
-                  }
-                  if(isFirstHit && moveData.damage / pets[atkSide].maxHp > 0.33)
-                  {
-                     bgLayer.vibrate();
                   }
                }
                updateStatus(def,hitLabel,version);
@@ -972,6 +964,7 @@ package animation.layer
       
       private function attachExternalShapeCover(param1:MovieClip, param2:MovieClip) : void
       {
+         return;
          var pet:MovieClip = param1;
          var action:MovieClip = param2;
          var state:Object = externalShapeCoverStates[pet];
@@ -1008,6 +1001,7 @@ package animation.layer
       
       private function applyExternalShapeCover(param1:MovieClip, param2:MovieClip) : void
       {
+         return;
          var pet:MovieClip = param1;
          var action:MovieClip = param2;
          var state:Object = externalShapeCoverStates[pet];
@@ -1332,7 +1326,7 @@ package animation.layer
          {
             return null;
          }
-         scale = Math.max(target.width / source.width,target.height / source.height) * 1.12;
+         scale = Math.max(target.width / source.width,target.height / source.height);
          if(!isFinite(scale) || scale <= 0)
          {
             return null;
@@ -2319,7 +2313,7 @@ package animation.layer
             if(isFinite(bounds.width) && isFinite(bounds.height) && bounds.width < 10000 && bounds.height < 10000)
             {
                legacyScene = isExternalLegacySceneTimeline(pet,bounds);
-               fitScale = legacyScene ? EXTERNAL_LEGACY_SCENE_SCALE : Math.min(1,EXTERNAL_MAX_RENDER_WIDTH / bounds.width,EXTERNAL_MAX_RENDER_HEIGHT / bounds.height) * UClientUniversalBattleAdapter.fitMultiplier(pet,bounds);
+               fitScale = 1.0;
                if(UClientUniversalBattleAdapter.supports(pet))
                {
                   targetBaselineY = EXTERNAL_UClient_TARGET_BASELINE_Y;
@@ -2335,18 +2329,26 @@ package animation.layer
                   scSubject = scAction == null ? null : measureStructuralSubject(pet,scAction,bounds);
                   scCenterX = scSubject == null ? bounds.x + bounds.width * 0.5 : Number(scSubject.centerX);
                   scBottom = scSubject == null ? bounds.bottom : Number(scSubject.bottom);
-                  pet.scaleX = fighter.scaleX * fitScale;
-                  pet.scaleY = fighter.scaleY * fitScale;
-                  pet.x = fighter.x + (EXTERNAL_TARGET_CENTER_X - scCenterX * fitScale) * fighter.scaleX;
-                  pet.y = fighter.y + (targetBaselineY - scBottom * fitScale) * fighter.scaleY;
+                  pet.scaleX = fighter.scaleX;
+                  pet.scaleY = fighter.scaleY;
+                  pet.x = fighter.x + (EXTERNAL_TARGET_CENTER_X - scCenterX) * fighter.scaleX;
+                  pet.y = fighter.y + (targetBaselineY - scBottom) * fighter.scaleY;
                   externalPlaced[pet] = true;
                   delete externalPlacementAttempts[pet];
                   return;
                }
-               pet.scaleX = fighter.scaleX * fitScale;
-               pet.scaleY = fighter.scaleY * fitScale;
-               pet.x = fighter.x + (EXTERNAL_TARGET_CENTER_X - EXTERNAL_TEMPLATE_CENTER_X * fitScale) * fighter.scaleX;
-               pet.y = fighter.y + (targetBaselineY - effectiveBaselineY * fitScale) * fighter.scaleY;
+               pet.scaleX = fighter.scaleX;
+               pet.scaleY = fighter.scaleY;
+               pet.x = fighter.x + (EXTERNAL_TARGET_CENTER_X - EXTERNAL_TEMPLATE_CENTER_X) * fighter.scaleX;
+               if(fighter.side === 2)
+               {
+                  pet.y = fighter.y;
+               }
+               else
+               {
+                  var clampedBaseline:Number = Math.max(120, Math.min(260, effectiveBaselineY));
+                  pet.y = fighter.y + (targetBaselineY - clampedBaseline) * fighter.scaleY;
+               }
                externalPlaced[pet] = true;
                delete externalPlacementAttempts[pet];
             }
