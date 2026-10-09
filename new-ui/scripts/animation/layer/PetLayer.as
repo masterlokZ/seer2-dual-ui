@@ -2282,6 +2282,7 @@ package animation.layer
                   {
                      effectiveBaselineY = Number(subject.bottom);
                   }
+                  fitScale = Math.min(1,EXTERNAL_MAX_RENDER_WIDTH / bounds.width,EXTERNAL_MAX_RENDER_HEIGHT / bounds.height) * UClientUniversalBattleAdapter.fitMultiplier(pet,bounds);
                }
                else if(legacyScene)
                {
@@ -2297,9 +2298,9 @@ package animation.layer
                   delete externalPlacementAttempts[pet];
                   return;
                }
-               pet.scaleX = fighter.scaleX;
-               pet.scaleY = fighter.scaleY;
-               pet.x = fighter.x + (EXTERNAL_TARGET_CENTER_X - EXTERNAL_TEMPLATE_CENTER_X) * fighter.scaleX;
+               pet.scaleX = fighter.scaleX * fitScale;
+               pet.scaleY = fighter.scaleY * fitScale;
+               pet.x = fighter.x + (EXTERNAL_TARGET_CENTER_X - EXTERNAL_TEMPLATE_CENTER_X * fitScale) * fighter.scaleX;
                if(fighter.side === 2)
                {
                   pet.y = fighter.y;
@@ -2307,7 +2308,7 @@ package animation.layer
                else
                {
                   var clampedBaseline:Number = Math.max(120, Math.min(260, effectiveBaselineY));
-                  pet.y = fighter.y + (targetBaselineY - clampedBaseline) * fighter.scaleY;
+                  pet.y = fighter.y + (targetBaselineY - clampedBaseline * fitScale) * fighter.scaleY;
                }
                externalPlaced[pet] = true;
                delete externalPlacementAttempts[pet];
