@@ -3546,7 +3546,6 @@ package com.taomee.seer2.app.arena
       
       private function armExternalActionCover(param1:MovieClip) : void
       {
-         return;
          var action:MovieClip = param1;
          this.clearExternalActionCover();
          if(!this._externalCompactTimeline || !this.isAttackAction() || action == null || this.isExternalActionVideoOrCinematic(action))
@@ -3572,7 +3571,6 @@ package com.taomee.seer2.app.arena
       
       private function primeExternalActionCover(param1:MovieClip) : void
       {
-         return;
          var action:MovieClip = param1;
          var actionClass:Class = null;
          var probe:MovieClip = null;
@@ -3649,7 +3647,6 @@ package com.taomee.seer2.app.arena
       
       private function prewarmExternalAttackCover() : void
       {
-         return;
          var rootClass:Class = null;
          var probeRoot:MovieClip = null;
          var probeAction:MovieClip = null;
@@ -3965,10 +3962,6 @@ package com.taomee.seer2.app.arena
             {
                return false;
             }
-            if(UClientUniversalBattleAdapter.supports(this._mc) || "uClientInternalBackgroundScale" in action && Boolean(action["uClientInternalBackgroundScale"]))
-            {
-               return true;
-            }
             return this.hasExternalCoverRectOccupancy(candidate,bounds);
          }
          catch(seedValidationError:*)
@@ -4097,7 +4090,6 @@ package com.taomee.seer2.app.arena
       
       private function applyExternalActionCover(param1:MovieClip) : void
       {
-         return;
          var i:int = 0;
          var candidate:Shape = null;
          var viewport:Rectangle = null;
