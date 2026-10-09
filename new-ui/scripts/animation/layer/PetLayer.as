@@ -1023,83 +1023,41 @@ package animation.layer
          {
             return;
          }
-         viewport = getExternalActionViewport(action);
-         if(viewport == null || viewport.width <= 1 || viewport.height <= 1)
+         try
          {
-            return;
-         }
-         delta = state.frozenDelta as Matrix;
-         if(delta == null && UClientUniversalBattleAdapter.supports(pet) && isExternalAttackCoverLabel(pet.currentLabel))
-         {
-            seedBounds = externalAttackCoverBounds[pet] as Rectangle;
-            if(seedBounds != null)
-            {
-               delta = buildExternalShapeCoverDelta(seedBounds,viewport);
-               if(delta != null)
-               {
-                  state.seed = null;
-                  state.frozenDelta = delta.clone();
-               }
-            }
-         }
-         if(delta == null)
-         {
-            seed = state.seed as Shape;
-            if(!isExternalShapeSeedValid(seed,action,viewport))
-            {
-               seed = findExternalShapeSeed(action,viewport);
-               state.seed = seed;
-            }
-            if(seed == null)
+            viewport = getExternalActionViewport(action);
+            if(viewport == null || viewport.width <= 1 || viewport.height <= 1)
             {
                return;
             }
-            try
+            index = 0;
+            while(index < action.numChildren)
             {
-               seedBounds = seed.getBounds(action);
-               delta = buildExternalShapeCoverDelta(seedBounds,viewport);
-            }
-            catch(geometryError:*)
-            {
-               return;
-            }
-            if(delta != null)
-            {
-               state.frozenDelta = delta.clone();
-            }
-         }
-         if(delta == null)
-         {
-            return;
-         }
-         var targetShape:Shape = state.seed as Shape;
-         if(targetShape == null && action.numChildren > 0)
-         {
-            targetShape = action.getChildAt(0) as Shape;
-         }
-         if(targetShape != null && targetShape.parent === action)
-         {
-            try
-            {
-               childBounds = targetShape.getBounds(action);
-               if(isExternalShapeBoundsValid(childBounds) && childBounds.width >= 600 && childBounds.height >= 350)
+               child = action.getChildAt(index) as Shape;
+               if(isExternalShapeSeedValid(child,action,viewport))
                {
-                  var shapeRatio:Number = childBounds.width / childBounds.height;
-                  if(shapeRatio >= 1.1 && shapeRatio <= 4.0)
+                  childBounds = child.getBounds(action);
+                  if(isExternalShapeBoundsValid(childBounds))
                   {
-                     state.saved.push({
-                        "shape":targetShape,
-                        "matrix":targetShape.transform.matrix.clone()
-                     });
-                     nextMatrix = targetShape.transform.matrix.clone();
-                     nextMatrix.concat(delta);
-                     targetShape.transform.matrix = nextMatrix;
+                     delta = buildExternalShapeCoverDelta(childBounds,viewport);
+                     if(delta != null)
+                     {
+                        state.saved.push({
+                           "shape":child,
+                           "matrix":child.transform.matrix.clone()
+                        });
+                        nextMatrix = child.transform.matrix.clone();
+                        nextMatrix.concat(delta);
+                        child.transform.matrix = nextMatrix;
+                     }
                   }
                }
+               index++;
             }
-            catch(applyError:*)
-            {
-            }
+         }
+         catch(coverError:*)
+         {
+            restoreExternalShapeCover(pet);
          }
       }
       
@@ -1191,7 +1149,7 @@ package animation.layer
             bounds = candidate.getBounds(action);
             ratio = bounds.width / bounds.height;
             area = bounds.width * bounds.height;
-            return isExternalShapeBoundsValid(bounds) && bounds.width > 2 && bounds.height > 2 && ratio >= 1.2 && ratio <= 3.5 && bounds.width >= viewport.width * 0.65 && bounds.height >= viewport.height * 0.55 && area >= viewport.width * viewport.height * 0.35 && hasExternalShapeRectOccupancy(candidate,bounds);
+            return isExternalShapeBoundsValid(bounds) && bounds.width > 2 && bounds.height > 2 && ratio >= 0.75 && ratio <= 4.5 && bounds.width >= viewport.width * 0.55 && bounds.height >= viewport.height * 0.45 && area >= viewport.width * viewport.height * 0.25 && hasExternalShapeRectOccupancy(candidate,bounds);
          }
          catch(seedValidationError:*)
          {
