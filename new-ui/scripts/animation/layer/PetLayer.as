@@ -964,7 +964,6 @@ package animation.layer
       
       private function attachExternalShapeCover(param1:MovieClip, param2:MovieClip) : void
       {
-         return;
          var pet:MovieClip = param1;
          var action:MovieClip = param2;
          var state:Object = externalShapeCoverStates[pet];
@@ -1001,7 +1000,6 @@ package animation.layer
       
       private function applyExternalShapeCover(param1:MovieClip, param2:MovieClip) : void
       {
-         return;
          var pet:MovieClip = param1;
          var action:MovieClip = param2;
          var state:Object = externalShapeCoverStates[pet];
@@ -1074,29 +1072,33 @@ package animation.layer
          {
             return;
          }
-         for(; index < action.numChildren; index++)
+         var targetShape:Shape = state.seed as Shape;
+         if(targetShape == null && action.numChildren > 0)
          {
-            child = action.getChildAt(index) as Shape;
-            if(child != null)
+            targetShape = action.getChildAt(0) as Shape;
+         }
+         if(targetShape != null && targetShape.parent === action)
+         {
+            try
             {
-               try
+               childBounds = targetShape.getBounds(action);
+               if(isExternalShapeBoundsValid(childBounds) && childBounds.width >= 600 && childBounds.height >= 350)
                {
-                  childBounds = child.getBounds(action);
-                  if(isExternalShapeBoundsValid(childBounds))
+                  var shapeRatio:Number = childBounds.width / childBounds.height;
+                  if(shapeRatio >= 1.1 && shapeRatio <= 4.0)
                   {
                      state.saved.push({
-                        "shape":child,
-                        "matrix":child.transform.matrix.clone()
+                        "shape":targetShape,
+                        "matrix":targetShape.transform.matrix.clone()
                      });
-                     nextMatrix = child.transform.matrix.clone();
+                     nextMatrix = targetShape.transform.matrix.clone();
                      nextMatrix.concat(delta);
-                     child.transform.matrix = nextMatrix;
+                     targetShape.transform.matrix = nextMatrix;
                   }
                }
-               catch(applyError:*)
-               {
-                  continue;
-               }
+            }
+            catch(applyError:*)
+            {
             }
          }
       }
