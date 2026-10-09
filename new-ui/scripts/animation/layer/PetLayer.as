@@ -964,6 +964,7 @@ package animation.layer
       
       private function attachExternalShapeCover(param1:MovieClip, param2:MovieClip) : void
       {
+         return;
          var pet:MovieClip = param1;
          var action:MovieClip = param2;
          var state:Object = externalShapeCoverStates[pet];
@@ -1000,6 +1001,7 @@ package animation.layer
       
       private function applyExternalShapeCover(param1:MovieClip, param2:MovieClip) : void
       {
+         return;
          var pet:MovieClip = param1;
          var action:MovieClip = param2;
          var state:Object = externalShapeCoverStates[pet];
@@ -1080,7 +1082,7 @@ package animation.layer
                try
                {
                   childBounds = child.getBounds(action);
-                  if(isExternalShapeBoundsValid(childBounds) && hasExternalShapeRectOccupancy(child,childBounds))
+                  if(isExternalShapeBoundsValid(childBounds))
                   {
                      state.saved.push({
                         "shape":child,
