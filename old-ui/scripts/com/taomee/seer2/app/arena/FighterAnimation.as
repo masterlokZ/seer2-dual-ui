@@ -408,7 +408,7 @@ package com.taomee.seer2.app.arena
       {
          var rootClass:Class = null;
          var root:MovieClip = null;
-         if(!this._externalCompactTimeline || this._mc == null || this.hasExternalIdleLabel() && !this._externalForceIdleInstance)
+         if(!this._externalCompactTimeline || this._mc == null || UClientUniversalBattleAdapter.supports(this._mc) || this.hasExternalIdleLabel() && !this._externalForceIdleInstance)
          {
             return;
          }
@@ -449,7 +449,7 @@ package com.taomee.seer2.app.arena
       private function shouldForceExternalIdleInstance() : Boolean
       {
          var bounds:Rectangle = null;
-         if(!this._externalCompactTimeline || this._mc == null)
+         if(!this._externalCompactTimeline || this._mc == null || UClientUniversalBattleAdapter.supports(this._mc))
          {
             return false;
          }
@@ -1895,6 +1895,10 @@ package com.taomee.seer2.app.arena
       
       private function isExternalTimeline() : Boolean
       {
+         if(this._mc != null && UClientUniversalBattleAdapter.supports(this._mc))
+         {
+            return true;
+         }
          if(this.isExternalIdleOnlyTimeline())
          {
             return true;
@@ -4509,6 +4513,43 @@ package com.taomee.seer2.app.arena
          var visual:MovieClip = null;
          if(this._actionAnimation == null)
          {
+            this._actionAnimation = this.getActionChild();
+         }
+         if(this._actionAnimation == null && this._mc != null && UClientUniversalBattleAdapter.supports(this._mc))
+         {
+            try
+            {
+               if("action" in this._mc && this._mc["action"] is MovieClip)
+               {
+                  this._actionAnimation = this._mc["action"] as MovieClip;
+               }
+            }
+            catch(ignored:*)
+            {
+            }
+         }
+         if(this._actionAnimation == null)
+         {
+            return;
+         }
+         if(this._mc != null && UClientUniversalBattleAdapter.supports(this._mc))
+         {
+            this.selectManagedIdleAction(this._actionAnimation);
+            try
+            {
+               this._mc.gotoAndStop("idle");
+            }
+            catch(ignored:*)
+            {
+            }
+            try
+            {
+               this._actionAnimation.gotoAndStop(1);
+            }
+            catch(ignored:*)
+            {
+            }
+            this.alignExternalCompactTimeline();
             return;
          }
          this.selectManagedIdleAction(this._actionAnimation);
@@ -4747,6 +4788,14 @@ package com.taomee.seer2.app.arena
                {
                   this.armHostViewportEntryEnd();
                }
+               if(this._mc != null && UClientUniversalBattleAdapter.supports(this._mc))
+               {
+                  this._mode = MODE_EXTERNAL_IDLE;
+                  this._requestedLabel = "待机";
+                  this.beginExternalIdleLoop(param1 == 0 ? this._actionSerial : param1);
+                  this.dispathchActionEndEvent(EVT_END);
+                  return;
+               }
                this.gotoLabel("待机");
             }
             else if(this._mode == MODE_STOP_LAST_FRAME)
@@ -4781,6 +4830,14 @@ package com.taomee.seer2.app.arena
             if(entryAction)
             {
                this.armHostViewportEntryEnd();
+            }
+            if(this._mc != null && UClientUniversalBattleAdapter.supports(this._mc))
+            {
+               this._mode = MODE_EXTERNAL_IDLE;
+               this._requestedLabel = "待机";
+               this.beginExternalIdleLoop(param1);
+               this.dispathchActionEndEvent(EVT_END);
+               return;
             }
             if(this._externalCompactTimeline)
             {
@@ -4871,6 +4928,19 @@ package com.taomee.seer2.app.arena
             }
          }
          this._actionAnimation = this.getActionChild();
+         if(this._actionAnimation == null && this._mc != null && UClientUniversalBattleAdapter.supports(this._mc))
+         {
+            try
+            {
+               if("action" in this._mc && this._mc["action"] is MovieClip)
+               {
+                  this._actionAnimation = this._mc["action"] as MovieClip;
+               }
+            }
+            catch(ignored:*)
+            {
+            }
+         }
          if(this._actionAnimation == null)
          {
             if(param2 < 8)
