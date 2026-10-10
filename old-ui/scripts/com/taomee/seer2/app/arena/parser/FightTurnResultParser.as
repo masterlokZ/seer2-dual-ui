@@ -78,10 +78,6 @@ package com.taomee.seer2.app.arena.parser
          {
             _scene.sortAllFighters();
             _scene.mapModel.content.addChild(atker);
-            if(atkee != null && atkee !== atker && atkee.parent === _scene.mapModel.content)
-            {
-               _scene.mapModel.content.addChild(atkee);
-            }
             atker.takeAction();
             var _loc1_:FighterTurnResultInfo = atker.fighterTurnResultInfo;
             showAtkerSkillInfo(_loc1_.skillId);

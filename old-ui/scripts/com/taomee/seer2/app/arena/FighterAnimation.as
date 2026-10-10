@@ -215,6 +215,8 @@ package com.taomee.seer2.app.arena
       
       private var _externalCoverFrozenDelta:Matrix;
       
+      private var _externalCoverOpponentRaised:Boolean = false;
+      
       private var _externalAttackCoverBounds:Rectangle;
       
       private var _externalAttackCoverPending:Object;
@@ -4074,6 +4076,10 @@ package com.taomee.seer2.app.arena
          var entry:Object = null;
          if(this._externalCoverOriginals == null)
          {
+            if(this._externalCoverOpponentRaised)
+            {
+               this.syncExternalCoverOpponentLayer(false);
+            }
             return;
          }
          for each(entry in this._externalCoverOriginals)
@@ -4090,6 +4096,10 @@ package com.taomee.seer2.app.arena
             }
          }
          this._externalCoverOriginals = null;
+         if(this._externalCoverOpponentRaised)
+         {
+            this.syncExternalCoverOpponentLayer(false);
+         }
       }
       
       private function applyExternalActionCover(param1:MovieClip) : void
@@ -4144,6 +4154,14 @@ package com.taomee.seer2.app.arena
                i++;
             }
             this._externalCoverOriginals = originals;
+            if(originals.length > 0)
+            {
+               this.syncExternalCoverOpponentLayer(true);
+            }
+            else if(this._externalCoverOpponentRaised)
+            {
+               this.syncExternalCoverOpponentLayer(false);
+            }
          }
          catch(coverError:*)
          {
@@ -4165,10 +4183,100 @@ package com.taomee.seer2.app.arena
             }
          }
          this.restoreExternalActionCover();
+         if(this._externalCoverOpponentRaised)
+         {
+            this.syncExternalCoverOpponentLayer(false);
+         }
          this._externalCoverAction = null;
          this._externalCoverExitHandler = null;
          this._externalCoverSeed = null;
          this._externalCoverFrozenDelta = null;
+      }
+      
+      private function getBattleOpponentFighter() : DisplayObject
+      {
+         var thisFighter:DisplayObject = this.parent;
+         if(thisFighter == null)
+         {
+            return null;
+         }
+         var content:DisplayObjectContainer = thisFighter.parent;
+         if(content == null)
+         {
+            return null;
+         }
+         try
+         {
+            if(SceneManager.active != null)
+            {
+               var arenaScene:* = SceneManager.active;
+               if("leftTeam" in arenaScene && "rightTeam" in arenaScene && arenaScene.leftTeam != null && arenaScene.rightTeam != null)
+               {
+                  if(thisFighter === arenaScene.leftTeam.mainFighter && arenaScene.rightTeam.mainFighter != null)
+                  {
+                     return arenaScene.rightTeam.mainFighter;
+                  }
+                  if(thisFighter === arenaScene.rightTeam.mainFighter && arenaScene.leftTeam.mainFighter != null)
+                  {
+                     return arenaScene.leftTeam.mainFighter;
+                  }
+               }
+            }
+         }
+         catch(ignored:*)
+         {
+         }
+         var i:int = 0;
+         while(i < content.numChildren)
+         {
+            var child:DisplayObject = content.getChildAt(i);
+            if(child != null && child !== thisFighter && "fighterSide" in child)
+            {
+               if("fighterSide" in thisFighter && child["fighterSide"] !== thisFighter["fighterSide"])
+               {
+                  return child;
+               }
+            }
+            i++;
+         }
+         return null;
+      }
+      
+      private function syncExternalCoverOpponentLayer(param1:Boolean) : void
+      {
+         var thisFighter:DisplayObject = this.parent;
+         if(thisFighter == null || thisFighter.parent == null)
+         {
+            return;
+         }
+         var content:DisplayObjectContainer = thisFighter.parent;
+         var oppFighter:DisplayObject = this.getBattleOpponentFighter();
+         if(oppFighter == null || oppFighter.parent !== content)
+         {
+            return;
+         }
+         try
+         {
+            if(param1)
+            {
+               if(content.getChildIndex(oppFighter) < content.getChildIndex(thisFighter))
+               {
+                  content.addChild(oppFighter);
+                  this._externalCoverOpponentRaised = true;
+               }
+            }
+            else if(this._externalCoverOpponentRaised)
+            {
+               if(content.getChildIndex(thisFighter) < content.getChildIndex(oppFighter))
+               {
+                  content.addChild(thisFighter);
+                  this._externalCoverOpponentRaised = false;
+               }
+            }
+         }
+         catch(layerErr:*)
+         {
+         }
       }
       
       private function playExternalAnimation(param1:Function, param2:int) : void

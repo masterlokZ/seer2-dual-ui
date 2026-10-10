@@ -98,6 +98,12 @@ package animation.layer
       
       private var externalAttackCoverPending:Dictionary = new Dictionary(true);
       
+      private var currentAtkPet:MovieClip;
+      
+      private var currentDefPet:MovieClip;
+      
+      private var externalCoverOpponentRaised:Boolean = false;
+      
       private var _dedicatedMovesCache:Dictionary = new Dictionary(true);
       
       public function PetLayer()
@@ -150,8 +156,11 @@ package animation.layer
          var defSide:int = moveSides[1];
          var atk:MovieClip = fighters[1 + atkSide].pet;
          var def:MovieClip = fighters[1 + defSide].pet;
-         setChildIndex(atk,2);
-         setChildIndex(def,3);
+         this.currentAtkPet = atk;
+         this.currentDefPet = def;
+         this.externalCoverOpponentRaised = false;
+         setChildIndex(def,2);
+         setChildIndex(atk,3);
          moveLabel = SkillCategoryName.atkLabel(moveData.category);
          hitLabel = buildHurtLabel(moveData.miss,moveData.critical);
          pets = Vector.<PetData>([null,frame.data.left.master,frame.data.right.master]);
@@ -172,6 +181,20 @@ package animation.layer
                {
                   return;
                }
+               if(externalCoverOpponentRaised)
+               {
+                  if(currentDefPet != null && currentDefPet.parent === this && currentAtkPet != null && currentAtkPet.parent === this)
+                  {
+                     if(getChildIndex(currentAtkPet) < getChildIndex(currentDefPet))
+                     {
+                        setChildIndex(currentDefPet,2);
+                        setChildIndex(currentAtkPet,3);
+                     }
+                  }
+                  externalCoverOpponentRaised = false;
+               }
+               currentAtkPet = null;
+               currentDefPet = null;
                atk.dispatchEvent(new Event(MOVE_ACTION_END));
                updateStatus(atk,buildIdleLabel(pets[atkSide]),version);
                resolve();
@@ -1054,6 +1077,30 @@ package animation.layer
                }
                index++;
             }
+            if(state.saved.length > 0)
+            {
+               if(this.currentDefPet != null && this.currentDefPet.parent === this && this.currentAtkPet != null && this.currentAtkPet.parent === this)
+               {
+                  if(getChildIndex(this.currentDefPet) < getChildIndex(this.currentAtkPet))
+                  {
+                     setChildIndex(this.currentAtkPet,2);
+                     setChildIndex(this.currentDefPet,3);
+                     this.externalCoverOpponentRaised = true;
+                  }
+               }
+            }
+            else if(this.externalCoverOpponentRaised)
+            {
+               if(this.currentDefPet != null && this.currentDefPet.parent === this && this.currentAtkPet != null && this.currentAtkPet.parent === this)
+               {
+                  if(getChildIndex(this.currentAtkPet) < getChildIndex(this.currentDefPet))
+                  {
+                     setChildIndex(this.currentDefPet,2);
+                     setChildIndex(this.currentAtkPet,3);
+                     this.externalCoverOpponentRaised = false;
+                  }
+               }
+            }
          }
          catch(coverError:*)
          {
@@ -1372,6 +1419,18 @@ package animation.layer
             return;
          }
          restoreExternalShapeCover(param1);
+         if(this.externalCoverOpponentRaised)
+         {
+            if(this.currentDefPet != null && this.currentDefPet.parent === this && this.currentAtkPet != null && this.currentAtkPet.parent === this)
+            {
+               if(getChildIndex(this.currentAtkPet) < getChildIndex(this.currentDefPet))
+               {
+                  setChildIndex(this.currentDefPet,2);
+                  setChildIndex(this.currentAtkPet,3);
+               }
+            }
+            this.externalCoverOpponentRaised = false;
+         }
          state.frozenDelta = null;
          state.seed = null;
          if(state.action != null && state.handler != null)
